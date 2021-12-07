@@ -1,0 +1,81 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWSBackup multi region template for recovery 
+
+Parameters:
+  DBInstanceIdentifier:
+    Type: String
+    Default: testrds
+    Description: enter rds instance name
+  DBSnapshotIdentifier:
+    Type: String
+    Default: awsbackup:copyjob-ccd0e43e-e00b-1ff0-2f61-fc8009cd3ea2
+    Description: select rds snapshot name
+  DBSubnetGroupName:
+    Type: String
+    Default: itbcp-basestack-osaka-rdssubnetgroup-18cxpopajvwer
+    Description: select rds subnetgroup name
+  DBSecurityGroups:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: select rds security group   
+
+  EC2ImageId:
+    Type: AWS::EC2::Image::Id
+    Default: ami-0701bd109b7b6ec02
+    Description: select ec2 ami id
+  # EC2KeyPair:
+  #   Type: AWS::EC2::KeyPair::KeyName
+  #   Description: select ec2 ssh keypair
+  EC2SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: select ec2 subnet id
+  EC2SecurityGroupId:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: select ec2 security group
+
+
+Resources:
+# ------------------------------------------------------------#
+#  RDS
+# ------------------------------------------------------------#
+
+  RDSInstance:
+    DeletionPolicy: Delete
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      # DBName: !Ref RDSInstanceName
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 10
+      DBSnapshotIdentifier: !Ref DBSnapshotIdentifier
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DBSubnetGroupName
+      VPCSecurityGroups: 
+        - !Ref DBSecurityGroups
+
+      # AvailabilityZone: ap-northeast-1a
+
+
+# ------------------------------------------------------------#
+#  EC2
+# ------------------------------------------------------------#
+
+  EC2Instance:
+    DeletionPolicy: Delete
+    Type: AWS::EC2::Instance
+    Properties:
+      # KeyName: !Ref EC2KeyPair
+      ImageId: !Ref EC2ImageId
+      InstanceType: t3.micro
+      Monitoring: false
+      NetworkInterfaces:
+        # - AssociatePublicIpAddress: true
+        - DeviceIndex: "0"
+          SubnetId: !Ref EC2SubnetId
+          GroupSet:
+            - !Ref EC2SecurityGroupId
+
+      Tags:
+        - Key: Name
+          Value: itbcp-osaka-ec2
+
