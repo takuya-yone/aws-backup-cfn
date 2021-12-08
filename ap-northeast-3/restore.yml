@@ -3,25 +3,40 @@ Description: >-
   AWSBackup multi region template for recovery 
 
 Parameters:
-  DBInstanceIdentifier:
-    Type: String
-    Default: testrds
-    Description: enter rds instance name
-  DBSnapshotIdentifier:
-    Type: String
-    Default: awsbackup:copyjob-ccd0e43e-e00b-1ff0-2f61-fc8009cd3ea2
-    Description: select rds snapshot name
-  DBSubnetGroupName:
-    Type: String
-    Default: itbcp-basestack-osaka-rdssubnetgroup-18cxpopajvwer
-    Description: select rds subnetgroup name
-  DBSecurityGroups:
-    Type: AWS::EC2::SecurityGroup::Id
-    Description: select rds security group   
 
+  ### RDS
+  # DBInstanceIdentifier:
+  #   Type: String
+  #   Default: testrds
+  #   Description: enter rds instance name
+  # DBSnapshotIdentifier:
+  #   Type: String
+  #   Default: awsbackup:copyjob-ccd0e43e-e00b-1ff0-2f61-fc8009cd3ea2
+  #   Description: select rds snapshot name
+  # DBSubnetGroupName:
+  #   Type: String
+  #   Default: itbcp-basestack-osaka-rdssubnetgroup-18cxpopajvwer
+  #   Description: select rds subnetgroup name
+  # DBSecurityGroups:
+  #   Type: AWS::EC2::SecurityGroup::Id
+  #   Description: select rds security group   
+
+  ### ALB
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: select alb security group     
+
+  ALBSubnetId1:
+    Type: AWS::EC2::Subnet::Id
+    Description: select alb subnet id1
+  ALBSubnetId2:
+    Type: AWS::EC2::Subnet::Id
+    Description: select alb subnet id2
+
+  ### EC2
   EC2ImageId:
     Type: AWS::EC2::Image::Id
-    Default: ami-0701bd109b7b6ec02
+    Default: ami-052c3ee050e25f5f9
     Description: select ec2 ami id
   # EC2KeyPair:
   #   Type: AWS::EC2::KeyPair::KeyName
@@ -39,21 +54,44 @@ Resources:
 #  RDS
 # ------------------------------------------------------------#
 
-  RDSInstance:
-    DeletionPolicy: Delete
-    Type: 'AWS::RDS::DBInstance'
-    Properties:
-      # DBName: !Ref RDSInstanceName
-      DBInstanceIdentifier: !Ref DBInstanceIdentifier
-      DBInstanceClass: db.t3.micro
-      AllocatedStorage: 10
-      DBSnapshotIdentifier: !Ref DBSnapshotIdentifier
-      PubliclyAccessible: false
-      DBSubnetGroupName: !Ref DBSubnetGroupName
-      VPCSecurityGroups: 
-        - !Ref DBSecurityGroups
+  # RDSInstance:
+  #   DeletionPolicy: Delete
+  #   Type: 'AWS::RDS::DBInstance'
+  #   Properties:
+  #     DBInstanceIdentifier: !Ref DBInstanceIdentifier
+  #     DBInstanceClass: db.t3.micro
+  #     AllocatedStorage: 10
+  #     DBSnapshotIdentifier: !Ref DBSnapshotIdentifier
+  #     PubliclyAccessible: false
+  #     DBSubnetGroupName: !Ref DBSubnetGroupName
+  #     VPCSecurityGroups: 
+  #       - !Ref DBSecurityGroups
 
-      # AvailabilityZone: ap-northeast-1a
+
+# ------------------------------------------------------------#
+#  ALB
+# ------------------------------------------------------------#
+
+  InternetALB: 
+    DeletionPolicy: Delete
+    Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+    Properties: 
+      Name: itbcp-osaka-alb
+      Tags: 
+        - Key: Name
+          Value: itbcp-osaka-alb
+      Scheme: internal
+      # Scheme: "internet-facing"
+      # LoadBalancerAttributes: 
+      #   - Key: "deletion_protection.enabled"
+      #     Value: false
+      #   - Key: "idle_timeout.timeout_seconds"
+      #     Value: 60
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      Subnets: 
+        - !Ref ALBSubnetId1
+        - !Ref ALBSubnetId2
 
 
 # ------------------------------------------------------------#
