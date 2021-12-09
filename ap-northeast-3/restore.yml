@@ -1,13 +1,13 @@
 AWSTemplateFormatVersion: 2010-09-09
 Description: >-
-  AWSBackup multi region template for recovery 
+  AWSBackup multi region template for recovery osaka
 
 Parameters:
 
   ### RDS
   # DBInstanceIdentifier:
   #   Type: String
-  #   Default: testrds
+  #   Default: itbcp-rds-osaka
   #   Description: enter rds instance name
   # DBSnapshotIdentifier:
   #   Type: String
@@ -33,10 +33,15 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Description: select alb subnet id2
 
+  ALBVPCId:
+    Type: AWS::EC2::VPC::Id
+    Description: select alb vpc
+
+
   ### EC2
   EC2ImageId:
     Type: AWS::EC2::Image::Id
-    Default: ami-052c3ee050e25f5f9
+    Default: ami-07a2d790164fd01d6
     Description: select ec2 ami id
   # EC2KeyPair:
   #   Type: AWS::EC2::KeyPair::KeyName
@@ -72,7 +77,7 @@ Resources:
 #  ALB
 # ------------------------------------------------------------#
 
-  InternetALB: 
+  InternalALB: 
     DeletionPolicy: Delete
     Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
     Properties: 
@@ -92,6 +97,55 @@ Resources:
       Subnets: 
         - !Ref ALBSubnetId1
         - !Ref ALBSubnetId2
+
+  InternalALBListener: 
+    DeletionPolicy: Delete
+    Type: "AWS::ElasticLoadBalancingV2::Listener"
+    Properties: 
+      DefaultActions: 
+        - TargetGroupArn: !Ref TargetGroup
+          Type: forward
+      LoadBalancerArn: !Ref InternalALB
+      Port: 80
+      Protocol: HTTP
+
+
+# ------------------------------------------------------------#
+#  ALB TargetGroup
+# ------------------------------------------------------------#
+
+  TargetGroup: 
+    DeletionPolicy: Delete
+    Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+    Properties: 
+      VpcId: !Ref ALBVPCId
+      Name: itbcp-osaka-alb-targetgroup
+      Protocol: HTTP
+      Port: 80
+      HealthCheckProtocol: HTTP
+      HealthCheckPath: "/"
+      HealthCheckPort: "traffic-port"
+      # HealthyThresholdCount: 2
+      # UnhealthyThresholdCount: 2
+      # HealthCheckTimeoutSeconds: 5
+      # HealthCheckIntervalSeconds: 10
+      # Matcher: 
+        # HttpCode: 200
+      Tags: 
+        - Key: Name
+          Value: itbcp-osaka-alb-targetgroup
+      # TargetGroupAttributes: 
+      #   - Key: "deregistration_delay.timeout_seconds"
+      #     Value: 300
+      #   - Key: "stickiness.enabled"
+      #     Value: false
+      #   - Key: "stickiness.type"
+      #     Value: lb_cookie
+      #   - Key: "stickiness.lb_cookie.duration_seconds"
+      #     Value: 86400
+      Targets: 
+        - Id: !Ref EC2Instance
+          Port: 80
 
 
 # ------------------------------------------------------------#

@@ -1,0 +1,195 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWSBackup multi region template for initial tokyo
+
+Parameters:
+
+  ## RDS
+  DBInstanceIdentifier:
+    Type: String
+    Default: itbcp-rds-tokyo
+    Description: enter rds instance name
+  DBSubnetGroupName:
+    Type: String
+    Default: itbcp-basestack-tokyo-rdssubnetgroup-qj45lotbi672
+    Description: select rds subnetgroup name
+  DBSecurityGroups:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: select rds security group   
+
+  DBInstanceUserId:
+    Type: String
+    Default: itbcprdsuser
+    Description: enter rds instance name
+  DBInstancePassword:
+    Type: String
+    Default: itbcprdspassword
+    Description: enter rds instance name
+  ### ALB
+  # ALBSecurityGroup:
+  #   Type: AWS::EC2::SecurityGroup::Id
+  #   Description: select alb security group     
+
+  # ALBSubnetId1:
+  #   Type: AWS::EC2::Subnet::Id
+  #   Description: select alb subnet id1
+  # ALBSubnetId2:
+  #   Type: AWS::EC2::Subnet::Id
+  #   Description: select alb subnet id2
+
+  # ALBVPCId:
+  #   Type: AWS::EC2::VPC::Id
+  #   Description: select alb vpc
+
+
+  # ### EC2
+  # EC2ImageId:
+  #   Type: AWS::EC2::Image::Id
+  #   # Amazon LinuxのAMIを指定
+  #   Default: ami-0f1ffb565070e6947
+  #   Description: select ec2 ami id
+  # # EC2KeyPair:
+  # #   Type: AWS::EC2::KeyPair::KeyName
+  # #   Description: select ec2 ssh keypair
+  # EC2SubnetId:
+  #   Type: AWS::EC2::Subnet::Id
+  #   Description: select ec2 subnet id
+  # EC2SecurityGroupId:
+  #   Type: AWS::EC2::SecurityGroup::Id
+  #   Description: select ec2 security group
+
+
+Resources:
+# ------------------------------------------------------------#
+#  RDS
+# ------------------------------------------------------------#
+
+  RDSInstance:
+    DeletionPolicy: Delete
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      DBInstanceClass: db.t3.micro
+      Engine: postgres
+      EngineVersion: 13.4
+      MasterUsername: !Ref DBInstanceUserId
+      MasterUserPassword: !Ref DBInstancePassword
+      AllocatedStorage: 10
+      # DBSnapshotIdentifier: !Ref DBSnapshotIdentifier
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DBSubnetGroupName
+      VPCSecurityGroups: 
+        - !Ref DBSecurityGroups
+
+    # Type: AWS::RDS::DBInstance
+    # DeletionPolicy: Snapshot
+    # Properties:
+    #   AllocatedStorage: '5'
+    #   DBInstanceClass: db.t3.medium
+    #   DBParameterGroupName: !Ref DBParameterGroup
+    #   DBSubnetGroupName: !Ref DBSubnetGroup
+    #   Engine: MySQL
+    #   EngineVersion: 5.7.30
+    #   MasterUsername: admin
+    #   MasterUserPassword: your_secret
+    #   StorageType: gp2
+
+
+# ------------------------------------------------------------#
+#  ALB
+# ------------------------------------------------------------#
+
+  # InternalALB: 
+  #   DeletionPolicy: Delete
+  #   Type: "AWS::ElasticLoadBalancingV2::LoadBalancer"
+  #   Properties: 
+  #     Name: itbcp-tokyo-alb
+  #     Tags: 
+  #       - Key: Name
+  #         Value: itbcp-tokyo-alb
+  #     Scheme: internal
+  #     # Scheme: "internet-facing"
+  #     # LoadBalancerAttributes: 
+  #     #   - Key: "deletion_protection.enabled"
+  #     #     Value: false
+  #     #   - Key: "idle_timeout.timeout_seconds"
+  #     #     Value: 60
+  #     SecurityGroups:
+  #       - !Ref ALBSecurityGroup
+  #     Subnets: 
+  #       - !Ref ALBSubnetId1
+  #       - !Ref ALBSubnetId2
+
+  # InternalALBListener: 
+  #   DeletionPolicy: Delete
+  #   Type: "AWS::ElasticLoadBalancingV2::Listener"
+  #   Properties: 
+  #     DefaultActions: 
+  #       - TargetGroupArn: !Ref TargetGroup
+  #         Type: forward
+  #     LoadBalancerArn: !Ref InternalALB
+  #     Port: 80
+  #     Protocol: HTTP
+
+
+# ------------------------------------------------------------#
+#  ALB TargetGroup
+# ------------------------------------------------------------#
+
+  # TargetGroup: 
+  #   DeletionPolicy: Delete
+  #   Type: "AWS::ElasticLoadBalancingV2::TargetGroup"
+  #   Properties: 
+  #     VpcId: !Ref ALBVPCId
+  #     Name: itbcp-tokyo-alb-targetgroup
+  #     Protocol: HTTP
+  #     Port: 80
+  #     HealthCheckProtocol: HTTP
+  #     HealthCheckPath: "/"
+  #     HealthCheckPort: "traffic-port"
+  #     # HealthyThresholdCount: 2
+  #     # UnhealthyThresholdCount: 2
+  #     # HealthCheckTimeoutSeconds: 5
+  #     # HealthCheckIntervalSeconds: 10
+  #     # Matcher: 
+  #       # HttpCode: 200
+  #     Tags: 
+  #       - Key: Name
+  #         Value: itbcp-tokyo-alb-targetgroup
+  #     # TargetGroupAttributes: 
+  #     #   - Key: "deregistration_delay.timeout_seconds"
+  #     #     Value: 300
+  #     #   - Key: "stickiness.enabled"
+  #     #     Value: false
+  #     #   - Key: "stickiness.type"
+  #     #     Value: lb_cookie
+  #     #   - Key: "stickiness.lb_cookie.duration_seconds"
+  #     #     Value: 86400
+  #     Targets: 
+  #       - Id: !Ref EC2Instance
+  #         Port: 80
+
+
+# ------------------------------------------------------------#
+#  EC2
+# ------------------------------------------------------------#
+
+  # EC2Instance:
+  #   DeletionPolicy: Delete
+  #   Type: AWS::EC2::Instance
+  #   Properties:
+  #     # KeyName: !Ref EC2KeyPair
+  #     ImageId: !Ref EC2ImageId
+  #     InstanceType: t3.micro
+  #     Monitoring: false
+  #     NetworkInterfaces:
+  #       # - AssociatePublicIpAddress: true
+  #       - DeviceIndex: "0"
+  #         SubnetId: !Ref EC2SubnetId
+  #         GroupSet:
+  #           - !Ref EC2SecurityGroupId
+
+  #     Tags:
+  #       - Key: Name
+  #         Value: itbcp-tokyo-ec2
+
