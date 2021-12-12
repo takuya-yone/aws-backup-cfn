@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >- 
+  AWSBackup multi region template for AWSBackup tokyo
+Resources:
+  BackupVaultTokyo:
+    DeletionPolicy: Delete
+    Type: "AWS::Backup::BackupVault"
+    Properties:
+      BackupVaultName: "TokyoVault"
+      EncryptionKeyArn: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/74ad9cec-2f3c-418a-8fb0-6f9125cefd2b"
+
+  BackupPlan:
+    DeletionPolicy: Delete
+    Type: "AWS::Backup::BackupPlan"
+    Properties:
+      BackupPlan: 
+        BackupPlanName: "test"
+        BackupPlanRule: 
+        - CompletionWindowMinutes: 10080
+          Lifecycle: 
+            DeleteAfterDays: 7
+          RuleName: "DailyBackups"
+          ScheduleExpression: "cron(0 5 ? * * *)"
+          StartWindowMinutes: 480
+          # TargetBackupVault: !Ref BackupVaultTokyo
+          CopyActions:
+          - DestinationBackupVaultArn: "arn:aws:backup:ap-northeast-3:690701631846:backup-vault:OsakaVault"
+            Lifecycle:
+            DeleteAfterDays: 7
+
+    BackupSelection:
+      DeletionPolicy: Delete
+      Type: "AWS::Backup::BackupSelection"
+      Properties:
+        BackupPlanId: !Ref BackupPlan
+        BackupSelection: 
+          SelectionName: "efs-test"
+          IamRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-role/AWSBackupDefaultServiceRole"
+          Resources: 
+              - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/fs-06926bda6c4cae055"
+
+
