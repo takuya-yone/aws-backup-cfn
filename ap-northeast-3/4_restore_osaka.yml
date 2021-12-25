@@ -4,22 +4,22 @@ Description: >-
 
 Parameters:
 
-  ### RDS
-  # DBInstanceIdentifier:
-  #   Type: String
-  #   Default: itbcp-rds-osaka
-  #   Description: enter rds instance name
-  # DBSnapshotIdentifier:
-  #   Type: String
-  #   Default: awsbackup:copyjob-ccd0e43e-e00b-1ff0-2f61-fc8009cd3ea2
-  #   Description: select rds snapshot name
-  # DBSubnetGroupName:
-  #   Type: String
-  #   Default: itbcp-basestack-osaka-rdssubnetgroup-18cxpopajvwer
-  #   Description: select rds subnetgroup name
-  # DBSecurityGroups:
-  #   Type: AWS::EC2::SecurityGroup::Id
-  #   Description: select rds security group   
+  ## RDS
+  DBInstanceIdentifier:
+    Type: String
+    Default: itbcp-rds-osaka
+    Description: enter rds instance name
+  DBSnapshotIdentifier:
+    Type: String
+    Default: awsbackup:copyjob-ccd0e43e-e00b-1ff0-2f61-fc8009cd3ea2
+    Description: select rds snapshot name
+  DBSubnetGroupName:
+    Type: String
+    Default: itbcp-basestack-osaka-rdssubnetgroup-18cxpopajvwer
+    Description: select rds subnetgroup name
+  DBSecurityGroups:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: select rds security group   
 
   ### ALB
   ALBSecurityGroup:
@@ -59,18 +59,18 @@ Resources:
 #  RDS
 # ------------------------------------------------------------#
 
-  # RDSInstance:
-  #   DeletionPolicy: Delete
-  #   Type: 'AWS::RDS::DBInstance'
-  #   Properties:
-  #     DBInstanceIdentifier: !Ref DBInstanceIdentifier
-  #     DBInstanceClass: db.t3.micro
-  #     AllocatedStorage: 10
-  #     DBSnapshotIdentifier: !Ref DBSnapshotIdentifier
-  #     PubliclyAccessible: false
-  #     DBSubnetGroupName: !Ref DBSubnetGroupName
-  #     VPCSecurityGroups: 
-  #       - !Ref DBSecurityGroups
+  RDSInstance:
+    DeletionPolicy: Delete
+    Type: 'AWS::RDS::DBInstance'
+    Properties:
+      DBInstanceIdentifier: !Ref DBInstanceIdentifier
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 10
+      DBSnapshotIdentifier: !Ref DBSnapshotIdentifier
+      PubliclyAccessible: false
+      DBSubnetGroupName: !Ref DBSubnetGroupName
+      VPCSecurityGroups: 
+        - !Ref DBSecurityGroups
 
 
 # ------------------------------------------------------------#

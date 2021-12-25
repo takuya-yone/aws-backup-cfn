@@ -1,0 +1,68 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >- 
+  AWSBackup multi region template for AWSBackup tokyo
+
+
+Parameters:
+  EC2InstanceId:
+    Type: AWS::EC2::Instance::Id
+    Description: select ec2 instance id
+
+  RDSInstanceId:
+    Type: String
+    Default: arn:aws:rds:ap-northeast-1:${AWS::AccountId}:db:itbcp-rds-instance
+    Description: select ec2 instance id
+
+Resources:
+  BackupVaultTokyo:
+    DeletionPolicy: Delete
+    Type: "AWS::Backup::BackupVault"
+    Properties:
+      BackupVaultName: "TokyoVault"
+      # EncryptionKeyArn: !Sub "arn:aws:kms:${AWS::Region}:${AWS::AccountId}:key/74ad9cec-2f3c-418a-8fb0-6f9125cefd2b"
+
+  BackupPlan:
+    DeletionPolicy: Delete
+    Type: "AWS::Backup::BackupPlan"
+    Properties:
+      BackupPlan: 
+        BackupPlanName: "itbcp-backup-plan"
+        BackupPlanRule: 
+        - CompletionWindowMinutes: 10080
+          Lifecycle: 
+            DeleteAfterDays: 7
+          RuleName: "DailyBackups"
+          ScheduleExpression: "cron(0 5 ? * * *)"
+          StartWindowMinutes: 480
+          TargetBackupVault: !Ref BackupVaultTokyo
+          CopyActions:
+          - DestinationBackupVaultArn: "arn:aws:backup:ap-northeast-3:${AWS::AccountId}:backup-vault:OsakaVault"
+            Lifecycle:
+              DeleteAfterDays: 7
+
+  EC2BackupSelection:
+    DeletionPolicy: Delete
+    Type: "AWS::Backup::BackupSelection"
+    Properties:
+      BackupPlanId: !Ref BackupPlan
+      BackupSelection: 
+        SelectionName: "ec2instance"
+        IamRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-role/AWSBackupDefaultServiceRole"
+        Resources: 
+          - !Join
+            - ''
+            - - !Sub "arn:aws:ec2:ap-northeast-1:${AWS::AccountId}:instance/"
+              - !Ref EC2InstanceId
+
+  RDSBackupSelection:
+    DeletionPolicy: Delete
+    Type: "AWS::Backup::BackupSelection"
+    Properties:
+      BackupPlanId: !Ref BackupPlan
+      BackupSelection: 
+        SelectionName: "rdsinstance"
+        IamRoleArn: !Sub "arn:aws:iam::${AWS::AccountId}:role/service-role/AWSBackupDefaultServiceRole"
+        Resources: 
+            # - !Sub "arn:aws:elasticfilesystem:${AWS::Region}:${AWS::AccountId}:file-system/fs-06926bda6c4cae055"
+            - !Ref RDSInstanceId
+
